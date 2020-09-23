@@ -1,5 +1,20 @@
 channels:
 - conda-forge
+- bioconda
 dependencies:
 - r-base=4.0.2
 - pandoc
+- r-dplyr
+- r-ggplot2
+- r-tidyr
+- r-remotes
+- r-msigdbr
+- r-rmarkdown
+- bioconductor-limma
+- bioconductor-edgeR
+- bioconductor-S4Vectors
+- bioconductor-DRIMSeq
+- bioconductor-SingleCellExperiment
+- bioconductor-tximeta
+- bioconductor-org.Hs.eg.db
+- bioconductor-org.Mm.eg.db

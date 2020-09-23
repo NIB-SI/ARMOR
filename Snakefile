@@ -1,5 +1,9 @@
-## Configuration file
 import os
+import pandas as pd
+import re
+
+
+## Configuration file
 if len(config) == 0:
   if os.path.isfile("./config.yaml"):
     configfile: "./config.yaml"
@@ -9,7 +13,7 @@ if len(config) == 0:
 ## Make sure that all expected variables from the config file are in the config dictionary
 configvars = ['annotation', 'organism', 'build', 'release', 'txome', 'genome', 'gtf', 'salmonindex', 'salmonk', 'STARindex', 'readlength', 'fldMean', 'fldSD', 'metatxt', 'design', 'contrast', 'genesets', 'ncores', 'FASTQ', 'fqext1', 'fqext2', 'fqsuffix', 'output', 'useCondaR', 'Rbin', 'run_trimming', 'run_STAR', 'run_DRIMSeq', 'run_camera']
 for k in configvars:
-	if k not in config:
+	if not (k in config):
 		config[k] = None
 
 ## If any of the file paths is missing, replace it with ""
@@ -29,7 +33,6 @@ config['metatxt'] = sanitizefile(config['metatxt'])
 if not os.path.isfile(config["metatxt"]):
   sys.exit("Metadata file " + config["metatxt"] + " does not exist.")
 
-import pandas as pd
 samples = pd.read_csv(config["metatxt"], sep='\t')
 
 if not set(['names','type']).issubset(samples.columns):
@@ -37,7 +40,6 @@ if not set(['names','type']).issubset(samples.columns):
 
 
 ## Sanitize provided input and output directories
-import re
 def getpath(str):
 	if str in ['', '.', './']:
 		return ''
@@ -51,11 +53,14 @@ def getpath(str):
 outputdir = getpath(config["output"])
 FASTQdir = getpath(config["FASTQ"])
 
+## Define the conda environment for all rules using shell commands
+Senv = "envs/environment_shell.yaml"
+
 ## Define the conda environment for all rules using R
 if config["useCondaR"] == True:
 	Renv = "envs/environment_R.yaml"
 else:
-	Renv = "envs/environment.yaml"
+	Renv = Senv
 
 ## Define the R binary
 Rbin = config["Rbin"]
@@ -68,32 +73,6 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		outputdir + "outputR/shiny_sce.rds"
-
-rule setup:
-	input:
-		outputdir + "Rout/pkginstall_state.txt",
-		outputdir + "Rout/softwareversions.done"
-
-## Install R packages
-rule pkginstall:
-	input:
-		script = "scripts/install_pkgs.R"
-	output:
-	  outputdir + "Rout/pkginstall_state.txt"
-	params:
-		flag = config["annotation"],
-		ncores = config["ncores"],
-		organism = config["organism"]
-	priority:
-		50
-	conda:
-		Renv
-	log:
-		outputdir + "Rout/install_pkgs.Rout"
-	benchmark:
-	  outputdir + "benchmarks/install_pkgs.txt"
-	shell:
-		'''{Rbin} CMD BATCH --no-restore --no-save "--args outtxt='{output}' ncores='{params.ncores}' annotation='{params.flag}' organism='{params.organism}'" {input.script} {log}'''
 
 ## FastQC on original (untrimmed) files
 rule runfastqc:
@@ -138,7 +117,7 @@ rule softwareversions:
 	output:
 		touch(outputdir + "Rout/softwareversions.done")
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo -n 'ARMOR version ' && cat version; "
 		"salmon --version; trim_galore --version; "
@@ -165,7 +144,7 @@ rule salmonindex:
 		anno = config["annotation"],
 		salmonextraparams = config["additional_salmon_index"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 	  """
 	  if [ {params.anno} == "Gencode" ]; then
@@ -185,7 +164,6 @@ rule linkedtxome:
 		gtf = config["gtf"],
 		salmonidx = config["salmonindex"] + "/versionInfo.json",
 		script = "scripts/generate_linkedtxome.R",
-		install = outputdir + "Rout/pkginstall_state.txt"
 	log:
 		outputdir + "Rout/generate_linkedtxome.Rout"
 	benchmark:
@@ -219,7 +197,7 @@ rule starindex:
 		readlength = config["readlength"],
 		starextraparams = config["additional_star_index"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	threads:
 		config["ncores"]
 	shell:
@@ -244,7 +222,7 @@ rule fastqc:
 	benchmark:
 		outputdir + "benchmarks/fastqc_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	threads:
 		config["ncores"]
 	shell:
@@ -264,7 +242,7 @@ rule fastqctrimmed:
 	benchmark:
 		outputdir + "benchmarks/fastqc_trimmed_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	threads:
 		config["ncores"]
 	shell:
@@ -315,7 +293,7 @@ rule multiqc:
 	benchmark:
 		outputdir + "benchmarks/multiqc.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'MultiQC version:\n' > {log}; multiqc --version >> {log}; "
 		"multiqc {params.inputdirs} -f -o {params.MultiQCdir}"
@@ -337,7 +315,7 @@ rule trimgaloreSE:
 	benchmark:
 		outputdir + "benchmarks/trimgalore_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'TrimGalore! version:\n' > {log}; trim_galore --version >> {log}; "
 		"trim_galore -q 20 --phred33 --length 20 -o {params.FASTQtrimmeddir} --path_to_cutadapt cutadapt {input.fastq}"
@@ -356,7 +334,7 @@ rule trimgalorePE:
 	benchmark:
 		outputdir + "benchmarks/trimgalore_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'TrimGalore! version:\n' > {log}; trim_galore --version >> {log}; "
 		"trim_galore -q 20 --phred33 --length 20 -o {params.FASTQtrimmeddir} --path_to_cutadapt cutadapt "
@@ -383,7 +361,7 @@ rule salmonSE:
 		salmondir = outputdir + "salmon",
 		salmonextraparams = config["additional_salmon_quant"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'Salmon version:\n' > {log}; salmon --version >> {log}; "
 		"salmon quant -i {params.salmonindex} -l A -r {input.fastq} "
@@ -407,7 +385,7 @@ rule salmonPE:
 		salmondir = outputdir + "salmon",
 		salmonextraparams = config["additional_salmon_quant"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'Salmon version:\n' > {log}; salmon --version >> {log}; "
 		"salmon quant -i {params.salmonindex} -l A -1 {input.fastq1} -2 {input.fastq2} "
@@ -434,7 +412,7 @@ rule starSE:
 		STARdir = outputdir + "STAR",
 		starextraparams = config["additional_star_align"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq} "
@@ -460,7 +438,7 @@ rule starPE:
 		STARdir = outputdir + "STAR",
 		starextraparams = config["additional_star_align"]
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq1} {input.fastq2} "
@@ -479,7 +457,7 @@ rule bamindex:
 	benchmark:
 		outputdir + "benchmarks/samtools_index_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'samtools version:\n' > {log}; samtools --version >> {log}; "
 		"samtools index {input.bam}"
@@ -498,7 +476,7 @@ rule bigwig:
 	benchmark:
 		outputdir + "benchmarks/bigwig_{sample}.txt"
 	conda:
-		"envs/environment.yaml"
+		Senv
 	shell:
 		"echo 'bedtools version:\n' > {log}; bedtools --version >> {log}; "
 		"bedtools genomecov -split -ibam {input.bam} -bg | LC_COLLATE=C sort -k1,1 -k2,2n > "
@@ -512,7 +490,6 @@ rule bigwig:
 ## tximeta
 rule tximeta:
 	input:
-	    outputdir + "Rout/pkginstall_state.txt",
 		expand(outputdir + "salmon/{sample}/quant.sf", sample = samples.names.values.tolist()),
 		metatxt = config["metatxt"],
 		salmonidx = config["salmonindex"] + "/versionInfo.json",
@@ -583,7 +560,6 @@ rule checkinputs:
 ## ------------------------------------------------------------------------------------ ##
 rule edgeR:
 	input:
-		outputdir + "Rout/pkginstall_state.txt",
 		rds = outputdir + "outputR/tximeta_se.rds",
 		script = "scripts/run_render.R",
 		template = "scripts/edgeR_dge.Rmd"
@@ -611,7 +587,6 @@ rule edgeR:
 ## DRIMSeq
 rule DRIMSeq:
 	input:
-	    outputdir + "Rout/pkginstall_state.txt",
 		rds = outputdir + "outputR/edgeR_dge.rds",
 		script = "scripts/run_render.R",
 		template = "scripts/DRIMSeq_dtu.Rmd"
@@ -639,7 +614,7 @@ rule DRIMSeq:
 ## shiny app
 ## ------------------------------------------------------------------------------------ ##
 def shiny_input(wildcards):
-	input = [outputdir + "Rout/pkginstall_state.txt"]
+	input = []
 	if config["run_STAR"]:
 		input.extend(expand(outputdir + "STARbigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names.values.tolist()))
 	return input

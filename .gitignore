@@ -1,0 +1,5 @@
+example_data/output
+Log.out
+example_data/reference/STARIndex/
+example_data/reference/SalmonIndex/
+.snakemake
