@@ -15,8 +15,11 @@ By default, the pipeline performs all the steps shown in the [diagram](img/dag_n
 Assuming that snakemake and conda are installed (and your system has the necessary libraries to compile R packages), you can use the following commands on a test dataset:
 
 ```
-git clone https://github.com/csoneson/ARMOR.git
-cd ARMOR && snakemake --use-conda
+git clone https://github.com/NIB-SI/ARMOR.git
+cd ARMOR
+conda env create  -n ARMOR -f envs/armor_root.yaml
+conda activate ARMOR
+snakemake --use-conda -j<num cores>
 ```
 
 To use the ARMOR workflow on your own data, follow the steps outlined in the [wiki](https://github.com/csoneson/ARMOR/wiki).
