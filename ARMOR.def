@@ -1,0 +1,30 @@
+BootStrap: library
+From:cbleker/dev/alpine-miniconda-singularity:sha256.d5f622360359feb6b85fef698fb39849dc02bb6994b615d6dd4a61ad9f17aefb
+
+%files
+    envs /armor/envs
+    scripts /armor/scripts
+    Snakefile /armor/Snakefile
+    snakemake-profile.yaml /armor/snakemake-profile/config.yaml
+    build /armor/build
+
+%post
+    . /opt/miniconda/etc/profile.d/conda.sh
+    conda activate base
+    conda env create -f /armor/envs/armor_root.yaml  --prefix /armor/conda-envs/armor
+    conda activate /armor/conda-envs/armor
+    cd /armor/build
+    ln -s ../scripts scripts
+    snakemake --profile /armor/snakemake-profile/ --conda-create-envs-only --cores 2 --snakefile ../Snakefile
+    cd /armor && rm -r /armor/build
+
+%environment
+    . /opt/miniconda/etc/profile.d/conda.sh
+    conda activate /armor/conda-envs/armor
+
+%labels
+    Author carissarobyn.bleker@nib.si
+    Version v0.0.1
+
+%help
+    Container to run ARMOR snakemake workflow.

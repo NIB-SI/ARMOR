@@ -1,0 +1,8 @@
+# snakemake config file https://github.com/snakemake-profiles/doc
+
+use-conda: True
+conda-prefix: /armor/conda-envs/
+
+
+
+#/armor/conda-envs/dba90355
