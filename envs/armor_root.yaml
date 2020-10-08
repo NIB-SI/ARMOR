@@ -1,3 +1,4 @@
+name: armor
 channels:
 - bioconda
 - conda-forge

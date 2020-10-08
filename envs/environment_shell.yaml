@@ -1,3 +1,4 @@
+name: shell-env
 channels:
 - bioconda
 - conda-forge
