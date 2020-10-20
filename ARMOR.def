@@ -1,4 +1,4 @@
-BootStrap: library
+BootStrap:library
 From:cbleker/dev/alpine-miniconda-singularity:sha256.d5f622360359feb6b85fef698fb39849dc02bb6994b615d6dd4a61ad9f17aefb
 
 %files
@@ -14,13 +14,16 @@ From:cbleker/dev/alpine-miniconda-singularity:sha256.d5f622360359feb6b85fef698fb
     conda env create -f /armor/envs/armor_root.yaml  --prefix /armor/conda-envs/armor
     conda activate /armor/conda-envs/armor
     cd /armor/build
-    ln -s ../scripts scripts
+    ln -s /armor/scripts scripts
     snakemake --profile /armor/snakemake-profile/ --conda-create-envs-only --cores 2 --snakefile ../Snakefile
     cd /armor && rm -r /armor/build
 
 %environment
     . /opt/miniconda/etc/profile.d/conda.sh
     conda activate /armor/conda-envs/armor
+    ln -s /armor/scripts scripts
+    export LC_ALL=en_US.utf-8
+    export LANG=en_US.utf-8
 
 %labels
     Author carissarobyn.bleker@nib.si

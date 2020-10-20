@@ -1,0 +1,13 @@
+BootStrap:localimage
+From:ARMOR.sif
+
+%files
+    scripts /armor/scripts
+    Snakefile /armor/Snakefile
+
+%environment
+    . /opt/miniconda/etc/profile.d/conda.sh
+    conda activate /armor/conda-envs/armor
+    ln -s /armor/scripts scripts
+    export LC_ALL=en_US.utf-8
+    export LANG=en_US.utf-8    
