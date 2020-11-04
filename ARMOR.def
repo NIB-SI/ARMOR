@@ -17,6 +17,7 @@ From:cbleker/dev/alpine-miniconda-singularity:sha256.d5f622360359feb6b85fef698fb
     ln -s /armor/scripts scripts
     snakemake --profile /armor/snakemake-profile/ --conda-create-envs-only --cores 2 --snakefile ../Snakefile
     cd /armor && rm -r /armor/build
+    conda clean --all -y
 
 %environment
     . /opt/miniconda/etc/profile.d/conda.sh

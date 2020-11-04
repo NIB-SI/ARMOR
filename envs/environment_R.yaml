@@ -11,6 +11,7 @@ dependencies:
 - r-remotes
 - r-msigdbr
 - r-rmarkdown
+- r-readr
 - bioconductor-limma
 - bioconductor-edgeR
 - bioconductor-S4Vectors
